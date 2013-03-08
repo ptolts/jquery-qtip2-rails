@@ -316,7 +316,7 @@ function QTip(target, options, id, attr)
 			// No images? Proceed with next
 			if(!images.length) { return next(); }
 
-			images.bind('load.imagesLoaded error.imagesLoaded', function() {
+			images.bind('load.imagesLoaded error.imagesLoaded', function(event) {
 				imgLoaded(event.target);
 			})
 			.each(function(i, el) {
@@ -1153,19 +1153,21 @@ function QTip(target, options, id, attr)
 					}
 				}
 
-				// Use Imagemap/SVG plugins if needed
+				// Check if the target is an <AREA> element
 				else if(PLUGINS.imagemap && target.is('area')) {
 					adjusted = PLUGINS.imagemap(self, target, at, PLUGINS.viewport ? method : FALSE);
 				}
+
+				// Check if the target is an SVG element
 				else if(PLUGINS.svg && target[0].ownerSVGElement) {
 					adjusted = PLUGINS.svg(self, target, at, PLUGINS.viewport ? method : FALSE);
 				}
 
+				// Otherwise use regular jQuery methods
 				else {
 					targetWidth = target.outerWidth(FALSE);
 					targetHeight = target.outerHeight(FALSE);
-
-					position = PLUGINS.offset(target, container);
+					position = target.offset();
 				}
 
 				// Parse returned plugin values into proper variables
@@ -1175,6 +1177,10 @@ function QTip(target, options, id, attr)
 					offset = adjusted.offset;
 					position = adjusted.position;
 				}
+
+
+				// Adjust position to take into account offset parents
+				position = PLUGINS.offset(target, position, container);
 
 				// Adjust for position.fixed tooltips (and also iOS scroll bug in v3.2-4.0 & v4.3-4.3.2)
 				if((PLUGINS.iOS > 3.1 && PLUGINS.iOS < 4.1) || 
@@ -1259,7 +1265,7 @@ function QTip(target, options, id, attr)
 			// Set flag the signify destroy is taking place to plugins
 			// and ensure it only gets destroyed once!
 			if(self.destroyed) { return; }
-			self.destroyed = !(self.rendered = FALSE);
+			self.destroyed = TRUE;
 
 			function process() {
 				var t = target[0],
@@ -1276,6 +1282,9 @@ function QTip(target, options, id, attr)
 
 					// Remove all descendants and tooltip element
 					tooltip.stop(1,0).find('*').remove().end().remove();
+
+					// Set rendered flag
+					self.rendered = FALSE;
 				}
 
 				// Clear timers and remove bound events
@@ -1579,9 +1588,8 @@ PLUGINS = QTIP.plugins = {
 	},
 
 	// Custom (more correct for qTip!) offset calculator
-	offset: function(elem, container) {
-		var pos = elem.offset(),
-			docBody = elem.closest('body'),
+	offset: function(elem, pos, container) {
+		var docBody = elem.closest('body'),
 			quirks = PLUGINS.ie && document.compatMode !== 'CSS1Compat',
 			parent = container, scrolled,
 			coffset, overflow;

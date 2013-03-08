@@ -1712,7 +1712,7 @@ $.each(PLUGINS.fn, function(name, func) {
 if(!$.ui) {
 	$['cleanData'+replaceSuffix] = $.cleanData;
 	$.cleanData = function( elems ) {
-		for(var i = 0, elem; (elem = elems[i]) !== undefined && elem.getAttribute(HASATTR); i++) {
+		for(var i = 0, elem; (elem = elems[i]) !== undefined && typeof elem.getAttribute === 'function' && elem.getAttribute(HASATTR); i++) {
 			try { $( elem ).triggerHandler('removeqtip');}
 			catch( e ) {}
 		}
